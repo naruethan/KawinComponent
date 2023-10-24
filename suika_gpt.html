@@ -1,0 +1,155 @@
+<!-- //bug -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Suika Game</title>
+    <style>
+      canvas {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <button onclick="startGame()">Start Game</button>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script src="game.js"></script>
+  </body>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const finishLineY = 50;
+    let fruits = [];
+    let score = 0;
+    let gameStarted = false;
+    let firstRound = true;
+
+    canvas.addEventListener("click", dropFruit);
+
+    const fruitInfo = [
+      { type: "apple", color: "red" },
+      { type: "banana", color: "yellow" },
+      { type: "cherry", color: "pink" },
+      { type: "grape", color: "purple" },
+      // ... add more fruit types and colors as needed
+    ];
+
+    function dropFruit(event) {
+      const x = event.clientX - canvas.offsetLeft;
+      const randomIndex = Math.floor(Math.random() * fruitInfo.length); // Get a random index from fruitInfo array
+      const selectedFruit = fruitInfo[randomIndex]; // Get the selected fruit info based on random index
+      const fruit = {
+        x: x,
+        y: 0,
+        size: 20,
+        type: selectedFruit.type, // Set type from selected fruit info
+        color: selectedFruit.color, // Set color from selected fruit info
+        speed: 2,
+      };
+      fruits.push(fruit);
+    }
+
+    function mergeFruits() {
+      for (let i = 0; i < fruits.length; i++) {
+        for (let j = i + 1; j < fruits.length; j++) {
+          if (
+            fruits[i].x + fruits[i].size > fruits[j].x &&
+            fruits[i].x < fruits[j].x + fruits[j].size &&
+            fruits[i].y + fruits[i].size > fruits[j].y &&
+            fruits[i].y < fruits[j].y + fruits[j].size &&
+            fruits[i].type === fruits[j].type
+          ) {
+            fruits[i].size += 10; // Example merging logic
+            fruits.splice(j, 1);
+            score += 10; // Increment score by 10 for each merge
+          }
+        }
+      }
+    }
+
+    function updateFruit(fruit) {
+      // Check for collision with the bottom of the canvas
+      if (fruit.y + fruit.size > canvas.height) {
+        fruit.y = canvas.height - fruit.size;
+        fruit.speed = 0;
+        score += 10; // Increment score by 10 when a fruit reaches the bottom
+      }
+
+      // Check for collision with other fruits
+      for (let i = 0; i < fruits.length; i++) {
+        let otherFruit = fruits[i];
+        if (otherFruit !== fruit) {
+          if (
+            fruit.x + fruit.size > otherFruit.x &&
+            fruit.x < otherFruit.x + otherFruit.size &&
+            fruit.y + fruit.size > otherFruit.y &&
+            fruit.y < otherFruit.y + otherFruit.size
+          ) {
+            fruit.y = otherFruit.y - fruit.size; // Stack fruit on top of otherFruit
+            fruit.speed = 0; // Stop the fruit from moving
+            score += 10; // Increment score by 10 when a fruit stacks on another fruit
+            break; // Exit the loop once a stacking is handled
+          }
+        }
+      }
+
+      fruit.y += fruit.speed; // Update fruit y position
+    }
+
+    function startGame() {
+      gameStarted = true;
+      firstRound = true;
+      update(); // Start the game loop when the Start Game button is clicked
+    }
+    function endGame() {
+      alert("Game Over! Your score is: " + score);
+      fruits = []; // Reset the fruits array to clear the canvas
+      score = 0; // Reset the score
+      gameStarted = false; // Set gameStarted to false to stop the game loop
+      firstRound = false; // Set firstRound to false as the game has ended
+      // ... any other game over logic you want to add
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw finish line
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, finishLineY, canvas.width, 2); // Draw a black line at finishLineY position
+
+      fruits.forEach((fruit) => {
+        if (!firstRound && fruit.y <= finishLineY + 2) {
+          endGame(); // Call endGame function to end the game
+        }
+
+        updateFruit(fruit); // Call updateFruit for each fruit object
+        ctx.fillStyle = fruit.color; // Use the color property of the fruit object
+        ctx.fillRect(fruit.x, fruit.y, fruit.size, fruit.size);
+      });
+
+      //   fruits.forEach((fruit) => {
+      //     // Check for collision with the finish line, but not on the first round
+      //     if (!firstRound && fruit.y <= finishLineY + 2) {
+      //       endGame(); // Call endGame function to end the game
+      //     }
+
+      //     fruit.y += fruit.speed; // Update fruit y position
+      //     ctx.fillStyle = fruit.color; // Use the color property of the fruit object
+      //     ctx.fillRect(fruit.x, fruit.y, fruit.size, fruit.size);
+      //   });
+
+      mergeFruits();
+      // Display score
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 10, 30);
+
+      if (gameStarted) {
+        requestAnimationFrame(update); // Only continue the game loop if the game has started
+      }
+    }
+
+    update();
+  </script>
+</html>
